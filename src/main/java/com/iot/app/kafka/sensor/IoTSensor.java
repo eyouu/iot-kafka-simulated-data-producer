@@ -1,4 +1,4 @@
-package com.iot.app.kafka.vo;
+package com.iot.app.kafka.sensor;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class IoTSensor implements Serializable{
+public class IoTSensor implements Serializable {
 
 	private String sensorId;
 	private String type;

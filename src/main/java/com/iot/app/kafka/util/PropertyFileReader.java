@@ -1,13 +1,14 @@
 package com.iot.app.kafka.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
-
+@Slf4j
 public class PropertyFileReader {
-	private static final Logger logger = Logger.getLogger(PropertyFileReader.class);
+
 	private static Properties prop = new Properties();
 
 	public static Properties readPropertyFile() {
@@ -17,7 +18,7 @@ public class PropertyFileReader {
 				try {
 					prop.load(input);
 				} catch (IOException ex) {
-					logger.error(ex);
+					log.error(ex.getMessage());
 					throw ex;
 				} finally {
 					if (input != null) {

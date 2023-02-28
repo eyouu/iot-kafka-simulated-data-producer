@@ -9,48 +9,45 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
-import com.iot.app.kafka.vo.IoTSensor;
-import org.apache.log4j.Logger;
+import com.iot.app.kafka.sensor.IoTSensor;
 
+import com.iot.app.kafka.util.IoTSensorEncoder;
 import com.iot.app.kafka.util.PropertyFileReader;
 
-import kafka.javaapi.producer.Producer;
-import kafka.producer.KeyedMessage;
-import kafka.producer.ProducerConfig;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 
+import static java.lang.Integer.parseInt;
+
+@Slf4j
 public class IoTDataProducer {
 
-    private static final Logger logger = Logger.getLogger(IoTDataProducer.class);
-    private static Properties properties = PropertyFileReader.readPropertyFile();
+    private static final Properties PROPERTIES = PropertyFileReader.readPropertyFile();
 
     public static void main(String[] args) throws Exception {
-        // read config file
-        String zookeeper = properties.getProperty("com.iot.app.kafka.zookeeper");
-        if (System.getProperty("com.iot.app.kafka.zookeeper") != null) {
-            zookeeper = System.getProperty("com.iot.app.kafka.zookeeper");
-        }
-        String brokerList = properties.getProperty("com.iot.app.kafka.brokerlist");
-        if (System.getProperty("com.iot.app.kafka.brokerlist") != null) {
-            brokerList = System.getProperty("com.iot.app.kafka.brokerlist");
-        }
-        String topic = properties.getProperty("com.iot.app.kafka.topic");
-        if (System.getProperty("com.iot.app.kafka.topic") != null) {
-            topic = System.getProperty("com.iot.app.kafka.topic");
-        }
-        logger.info("Using Zookeeper=" + zookeeper + " ,Broker-list=" + brokerList + " and topic " + topic);
+        log.info("Property file path = " + System.getProperty("iot-kafka.properties"));
+
+        String kafkaServer = readProperty("kafka.bootstrap-servers");
+        String topic = readProperty("kafka.topic");
+
+        log.info("Connected to Kafka cluster: " + kafkaServer + " and listening to topic: " + topic);
 
         // set producer properties
         Properties properties = new Properties();
-        properties.put("zookeeper.connect", zookeeper);
-        properties.put("metadata.broker.list", brokerList);
-        properties.put("request.required.acks", "1");
-        properties.put("serializer.class", "com.iot.app.kafka.util.IoTSensorEncoder");
-        //generate event
-        Producer<String, IoTSensor> producer = new Producer<>(new ProducerConfig(properties));
+        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IoTSensorEncoder.class.getName());
+
+        // generate events
+        Producer<String, IoTSensor> producer = new KafkaProducer<>(properties);
         IoTDataProducer iotProducer = new IoTDataProducer();
         iotProducer.generateIoTEvent(producer, topic);
     }
-
 
     /**
      * Method runs in while loop and generates random IoT data in JSON.
@@ -60,7 +57,7 @@ public class IoTDataProducer {
         int minDelayTime = getMinDelayTime();
         int maxDelayTime = getMaxDelayTime();
         Random random = new Random();
-        logger.info("Sending sensor events");
+        log.info("Sending sensor events");
         // generate event in loop
 
         while (true) {
@@ -86,7 +83,7 @@ public class IoTDataProducer {
             Collections.shuffle(sensorEvents); // shuffle for random events
             for (IoTSensor event : sensorEvents) {
                 event.setTimestamp(new Date());
-                KeyedMessage<String, IoTSensor> data = new KeyedMessage<>(topic, event);
+                ProducerRecord<String, IoTSensor> data = new ProducerRecord<>(topic, event);
                 producer.send(data);
                 Thread.sleep(random.nextInt(maxDelayTime - minDelayTime) + maxDelayTime); // random delay between configured time
             }
@@ -94,18 +91,22 @@ public class IoTDataProducer {
     }
 
     private static int getMinDelayTime() {
-        int minDelay = Integer.parseInt(properties.getProperty("iot.sensor.minDelay"));
-        if (System.getProperty("iot.sensor.minDelay") != null) {
-            minDelay = Integer.parseInt(System.getProperty("iot.sensor.minDelay"));
-        }
-        return minDelay;
+        return readIntProperty("sensor.min-delay");
     }
 
     private static int getMaxDelayTime() {
-        int maxDelay = Integer.parseInt(properties.getProperty("iot.sensor.maxDelay"));
-        if (System.getProperty("iot.sensor.maxDelay") != null) {
-            maxDelay = Integer.parseInt(System.getProperty("iot.sensor.maxDelay"));
+        return readIntProperty("sensor.max-delay");
+    }
+
+    private static int readIntProperty(@NonNull String property) {
+        return parseInt(readProperty(property));
+    }
+
+    private static String readProperty(@NonNull String property) {
+        String kafkaServer = PROPERTIES.getProperty(property);
+        if (System.getProperty(property) != null) {
+            kafkaServer = System.getProperty(property);
         }
-        return maxDelay;
+        return kafkaServer;
     }
 }

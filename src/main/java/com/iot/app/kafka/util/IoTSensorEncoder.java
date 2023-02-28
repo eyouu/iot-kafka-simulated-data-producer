@@ -1,30 +1,31 @@
 package com.iot.app.kafka.util;
 
-import com.iot.app.kafka.vo.IoTSensor;
-import org.apache.log4j.Logger;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iot.app.kafka.sensor.IoTSensor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.serialization.Serializer;
 
-import kafka.serializer.Encoder;
-import kafka.utils.VerifiableProperties;
+import java.util.Map;
 
-public class IoTSensorEncoder implements Encoder<IoTSensor> {
-	
-	private static final Logger logger = Logger.getLogger(IoTSensorEncoder.class);
-	private static ObjectMapper objectMapper = new ObjectMapper();
+@Slf4j
+public class IoTSensorEncoder implements Serializer<IoTSensor> {
 
-	public IoTSensorEncoder(VerifiableProperties verifiableProperties) {
+    private static ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
     }
 
-	public byte[] toBytes(IoTSensor iotEvent) {
-		try {
-			String msg = objectMapper.writeValueAsString(iotEvent);
-			logger.info(msg);
-			return msg.getBytes();
-		} catch (JsonProcessingException e) {
-			logger.error("Error in Serialization", e);
-		}
-		return null;
-	}
+    @Override
+    public byte[] serialize(String topic, IoTSensor iotEvent) {
+        try {
+            String msg = objectMapper.writeValueAsString(iotEvent);
+            log.info(msg);
+            return msg.getBytes();
+        } catch (JsonProcessingException e) {
+            log.error("Error in Serialization", e);
+        }
+        return null;
+    }
 }

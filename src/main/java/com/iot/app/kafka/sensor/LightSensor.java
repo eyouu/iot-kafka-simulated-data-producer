@@ -13,13 +13,12 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class IoTSensor implements Serializable {
+public class LightSensor implements Serializable {
 
-	private String sensorId;
-	private String type;
-	private double temperature;
-	private double humidity;
-	private boolean isOn;
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone="MST")
-	private Date timestamp;
+    private String id;
+    private int lightIntensity;
+    private int batteryLevel;
+    private int signalStrength;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone="MST")
+    private Date timestamp;
 }
